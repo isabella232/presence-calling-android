@@ -21,7 +21,7 @@ public class LoginActivity extends ActionBarActivity {
                 if (username.length() == 0) {
                     Toast.makeText(getApplicationContext(), "Enter a username.", Toast.LENGTH_SHORT);
                 } else {
-                    Intent intent = new Intent(getApplicationContext(), ListUsersActivity.class);
+                    Intent intent = new Intent(getApplicationContext(), MainActivity.class);
                     intent.putExtra("username", username);
                     startActivity(intent);
                 }

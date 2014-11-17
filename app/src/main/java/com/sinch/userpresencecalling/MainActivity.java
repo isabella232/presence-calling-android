@@ -28,12 +28,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class ListUsersActivity extends ActionBarActivity {
+public class MainActivity extends ActionBarActivity {
 
     private Pubnub pubnub;
     private ArrayList users;
     private JSONArray hereNowUuids;
-    String currentUuid;
     private String username;
     private SinchClient sinchClient;
     private Button pickupButton;
@@ -43,7 +42,7 @@ public class ListUsersActivity extends ActionBarActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_list_users);
+        setContentView(R.layout.activity_main);
 
         username = getIntent().getStringExtra("username");
         pubnub = new Pubnub("pub", "sub");
@@ -121,13 +120,13 @@ public class ListUsersActivity extends ActionBarActivity {
                     Log.d("JSONException",e.toString());
                 }
 
+                String currentUuid;
                 for (int i=0;i<hereNowUuids.length();i++){
-
                     try {
                         currentUuid = hereNowUuids.get(i).toString();
                         if (!currentUuid.equals(pubnub.getUUID())) {
                             users.add(currentUuid);
-                            ListUsersActivity.this.runOnUiThread(new Runnable() {
+                            MainActivity.this.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     usersArrayAdapter.notifyDataSetChanged();
@@ -161,10 +160,11 @@ public class ListUsersActivity extends ActionBarActivity {
                         JSONObject jsonMessage = new JSONObject(message.toString());
                         String action = jsonMessage.get("action").toString();
                         String uuid = jsonMessage.get("uuid").toString();
+
                         if (!uuid.equals(pubnub.getUUID())) {
                             if (action.equals("join")) {
                                 users.add(uuid);
-                                ListUsersActivity.this.runOnUiThread(new Runnable() {
+                                MainActivity.this.runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
                                         usersArrayAdapter.notifyDataSetChanged();
@@ -174,7 +174,7 @@ public class ListUsersActivity extends ActionBarActivity {
                                 for (int i = 0; i < users.size(); i++) {
                                     if (users.get(i).equals(uuid)) {
                                         users.remove(i);
-                                        ListUsersActivity.this.runOnUiThread(new Runnable() {
+                                        MainActivity.this.runOnUiThread(new Runnable() {
                                             @Override
                                             public void run() {
                                                 usersArrayAdapter.notifyDataSetChanged();
@@ -184,13 +184,11 @@ public class ListUsersActivity extends ActionBarActivity {
                                 }
                             }
                         }
-
                     } catch (JSONException e) {
                         Log.d("JSONException", e.toString());
                     }
                 }
             });
-
         } catch (PubnubException e) {
             Log.d("PubnubException",e.toString());
         }
@@ -200,13 +198,6 @@ public class ListUsersActivity extends ActionBarActivity {
         @Override
         public void onCallEnded(Call endedCall) {
             call = null;
-
-            try {
-                pubnub.subscribe("calling_channel", new Callback() {});
-            } catch (PubnubException e) {
-                Log.d("PubnubException",e.toString());
-            }
-
             hangupButton.setText("No call to hang up right now...");
             pickupButton.setText("No call to pick up right now...");
             setVolumeControlStream(AudioManager.USE_DEFAULT_STREAM_TYPE);

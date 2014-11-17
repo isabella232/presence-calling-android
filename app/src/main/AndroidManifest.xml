@@ -27,7 +27,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ListUsersActivity"
+            android:name=".MainActivity"
             android:label="@string/title_activity_list_users" >
         </activity>
     </application>
