@@ -30,31 +30,34 @@ import java.util.List;
 
 public class MainActivity extends ActionBarActivity {
 
+    static final String JSON_EXCEPTION = "JSON Exception";
+    static final String PUBNUB_EXCEPTION = "Pubnub Exception";
+
+
     private Pubnub pubnub;
     private ArrayList users;
     private JSONArray hereNowUuids;
-    private String username;
     private SinchClient sinchClient;
     private Button pickupButton;
     private Button hangupButton;
-    private Call call = null;
+    private Call currentCall = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        username = getIntent().getStringExtra("username");
+        String username = getIntent().getStringExtra("username");
         pubnub = new Pubnub("pub", "sub");
         pubnub.setUUID(username);
 
         sinchClient = Sinch.getSinchClientBuilder()
-                .context(this)
-                .userId(username)
-                .applicationKey("key")
-                .applicationSecret("secret")
-                .environmentHost("sandbox.sinch.com")
-                .build();
+            .context(this)
+            .userId(username)
+            .applicationKey("key")
+            .applicationSecret("secret")
+            .environmentHost("sandbox.sinch.com")
+            .build();
 
         sinchClient.setSupportCalling(true);
         sinchClient.startListeningOnActiveConnection();
@@ -69,19 +72,16 @@ public class MainActivity extends ActionBarActivity {
     public void onResume() {
         super.onResume();
 
-        sinchClient.startListeningOnActiveConnection();
-
         users = new ArrayList<String>();
-        final ListView usersListView = (ListView)findViewById(R.id.usersListView);
+        final ListView usersListView = (ListView) findViewById(R.id.usersListView);
         final ArrayAdapter usersArrayAdapter = new ArrayAdapter<String>(getApplicationContext(), R.layout.user_list_item, users);
         usersListView.setAdapter(usersArrayAdapter);
 
         pickupButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (call != null) {
-                    call.answer();
-                    sinchClient.stopListeningOnActiveConnection();
+                if (currentCall != null) {
+                    currentCall.answer();
                 }
             }
         });
@@ -89,8 +89,8 @@ public class MainActivity extends ActionBarActivity {
         hangupButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (call != null) {
-                    call.hangup();
+                if (currentCall != null) {
+                    currentCall.hangup();
                 }
             }
         });
@@ -98,10 +98,9 @@ public class MainActivity extends ActionBarActivity {
         usersListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int i, long id) {
-                if (call == null) {
-                    sinchClient.stopListeningOnActiveConnection();
-                    call = sinchClient.getCallClient().callUser(users.get(i).toString());
-                    call.addCallListener(new SinchCallListener());
+                if (currentCall == null) {
+                    currentCall = sinchClient.getCallClient().callUser(users.get(i).toString());
+                    currentCall.addCallListener(new SinchCallListener());
                     hangupButton.setText("Hang Up Call with " + users.get(i));
                 } else {
                     Toast.makeText(getApplicationContext(),
@@ -117,11 +116,11 @@ public class MainActivity extends ActionBarActivity {
                     JSONObject hereNowResponse = new JSONObject(response.toString());
                     hereNowUuids = new JSONArray(hereNowResponse.get("uuids").toString());
                 } catch (JSONException e) {
-                    Log.d("JSONException",e.toString());
+                    Log.d(JSON_EXCEPTION, e.toString());
                 }
 
                 String currentUuid;
-                for (int i=0;i<hereNowUuids.length();i++){
+                for (int i = 0; i < hereNowUuids.length(); i++) {
                     try {
                         currentUuid = hereNowUuids.get(i).toString();
                         if (!currentUuid.equals(pubnub.getUUID())) {
@@ -134,13 +133,13 @@ public class MainActivity extends ActionBarActivity {
                             });
                         }
                     } catch (JSONException e) {
-                        Log.d("JSONException",e.toString());
+                        Log.d(JSON_EXCEPTION, e.toString());
                     }
                 }
             }
 
-            public void errorCallback(String channel, PubnubError error) {
-                Log.d("PubnubError", error.toString());
+            public void errorCallback(String channel, PubnubError e) {
+                Log.d("PubnubError", e.toString());
             }
         });
 
@@ -148,7 +147,7 @@ public class MainActivity extends ActionBarActivity {
             pubnub.subscribe("calling_channel", new Callback() {
             });
         } catch (PubnubException e) {
-            Log.d("PubnubException",e.toString());
+            Log.d(PUBNUB_EXCEPTION, e.toString());
         }
 
         try {
@@ -185,47 +184,47 @@ public class MainActivity extends ActionBarActivity {
                             }
                         }
                     } catch (JSONException e) {
-                        Log.d("JSONException", e.toString());
+                        Log.d(JSON_EXCEPTION, e.toString());
                     }
                 }
             });
         } catch (PubnubException e) {
-            Log.d("PubnubException",e.toString());
+            Log.d(PUBNUB_EXCEPTION, e.toString());
         }
     }
 
     private class SinchCallListener implements CallListener {
         @Override
-        public void onCallEnded(Call endedCall) {
-            call = null;
+        public void onCallEnded(Call call) {
+            currentCall = null;
             hangupButton.setText("No call to hang up right now...");
             pickupButton.setText("No call to pick up right now...");
             setVolumeControlStream(AudioManager.USE_DEFAULT_STREAM_TYPE);
-            sinchClient.startListeningOnActiveConnection();
         }
 
         @Override
-        public void onCallEstablished(Call establishedCall) {
-            hangupButton.setText("Hang up call with " + establishedCall.getRemoteUserId());
+        public void onCallEstablished(Call call) {
+            hangupButton.setText("Hang up call with " + call.getRemoteUserId());
             pickupButton.setText("No call to pick up right now...");
             setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
         }
 
         @Override
-        public void onCallProgressing(Call progressingCall) {
+        public void onCallProgressing(Call call) {
             hangupButton.setText("Ringing");
         }
 
         @Override
-        public void onShouldSendPushNotification(Call call, List<PushPair> pushPairs) {}
+        public void onShouldSendPushNotification(Call call, List<PushPair> pushPairs) {
+        }
     }
 
     private class SinchCallClientListener implements CallClientListener {
         @Override
         public void onIncomingCall(CallClient callClient, Call incomingCall) {
-            if (call == null) {
-                call = incomingCall;
-                call.addCallListener(new SinchCallListener());
+            if (currentCall == null) {
+                currentCall = incomingCall;
+                currentCall.addCallListener(new SinchCallListener());
                 pickupButton.setText("Pick up call from " + incomingCall.getRemoteUserId());
                 hangupButton.setText("Ignore call from " + incomingCall.getRemoteUserId());
             }
@@ -240,7 +239,6 @@ public class MainActivity extends ActionBarActivity {
     public void onPause() {
         super.onPause();
         pubnub.unsubscribe("calling_channel");
-        sinchClient.stopListeningOnActiveConnection();
     }
 
 

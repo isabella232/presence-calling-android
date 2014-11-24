@@ -81,12 +81,11 @@ Each item in the list will use the layout in **user_list_item.xml**. This will b
           
 Using Pubnub, each user can subscribe to the channel **calling_channel**, and listen for presence events on that channel (users joining and leaving). In this app, you will want users to subscribe to the channel when they are active in the app, and leave the channel when they put the app in the background or kill the app. In MainActivity onCreate, get the current username from the intent and create a new Pubnub object:
 
-    //declare variables globally within the MainActivity
+    //declare globally within the MainActivity
     private Pubnub pubnub;
-    private String username;
     
     //in onCreate
-    username = getIntent().getStringExtra("username");
+    String username = getIntent().getStringExtra("username");
     pubnub = new Pubnub("your-publish-key", "your-subscribe-key");
     pubnub.setUUID(username);
     
@@ -200,7 +199,6 @@ In addition, you will want to unsubscribe users from the channel when they kill 
     public void onPause() {
         super.onPause();
         pubnub.unsubscribe("calling_channel");
-        sinchClient.stopListeningOnActiveConnection();
     }
     
 And lastly, override the method **onBackPressed** so that it doesn't return users to the login screen:
@@ -268,7 +266,7 @@ In onCreate, start an instance of the Sinch client using your app key and secret
     private SinchClient sinchClient;
     private Button pickupButton;
     private Button hangupButton;
-    private Call call; //the current call
+    private Call currentCall;
 
     //in onCreate
     sinchClient = Sinch.getSinchClientBuilder()
@@ -294,21 +292,19 @@ Next, you need to define listeners for the Sinch call client, as well as for ind
     private class SinchCallListener implements CallListener {
         //when the call ends for any reason
         @Override
-        public void onCallEnded(Call endedCall) {
+        public void onCallEnded(Call call) {
             //no current call
-            call = null;
+            currentCall = null;
             hangupButton.setText("No call to hang up right now...");
             pickupButton.setText("No call to pick up right now...");
             //volume buttons go back to controlling ringtone volume
             setVolumeControlStream(AudioManager.USE_DEFAULT_STREAM_TYPE);
-            //start listening for incoming calls again
-            sinchClient.startListeningOnActiveConnection();
         }
 
         //recipient picks up the call
         @Override
-        public void onCallEstablished(Call establishedCall) {
-            hangupButton.setText("Hang up call with " + establishedCall.getRemoteUserId());
+        public void onCallEstablished(Call call) {
+            hangupButton.setText("Hang up call with " + call.getRemoteUserId());
             pickupButton.setText("No call to pick up right now...");
             //ringtone volume buttons now control the speaker volume
             setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
@@ -316,7 +312,7 @@ Next, you need to define listeners for the Sinch call client, as well as for ind
 
         //when call is "ringing"
         @Override
-        public void onCallProgressing(Call progressingCall) {
+        public void onCallProgressing(Call call) {
             hangupButton.setText("Ringing");
         }
 
@@ -331,9 +327,9 @@ Next, you need to define listeners for the Sinch call client, as well as for ind
         @Override
         public void onIncomingCall(CallClient callClient, Call incomingCall) {
             //only react if there is no current call
-            if (call == null) {
-                call = incomingCall;
-                call.addCallListener(new SinchCallListener());
+            if (currentCall == null) {
+                currentCall = incomingCall;
+                currentCall.addCallListener(new SinchCallListener());
                 pickupButton.setText("Pick up call from " + incomingCall.getRemoteUserId());
                 hangupButton.setText("Ignore call from " + incomingCall.getRemoteUserId());
             }
@@ -350,9 +346,8 @@ Next, make the pickup and hangup buttons functional:
     pickupButton.setOnClickListener(new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            if (call != null) {
-                call.answer();
-                sinchClient.stopListeningOnActiveConnection();
+            if (currentCall != null) {
+                currentCall.answer();
             }
         }
     });
@@ -361,8 +356,8 @@ Next, make the pickup and hangup buttons functional:
     hangupButton.setOnClickListener(new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            if (call != null) {
-                call.hangup();
+            if (currentCall != null) {
+                currentCall.hangup();
             }
         }
     });
@@ -372,13 +367,11 @@ Now that you're prepared to accept incoming calls, you should let your users act
     usersListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int i, long id) {
-            if (call == null) {
-                //stop listening for incoming calls
-                sinchClient.stopListeningOnActiveConnection();
+            if (currentCall == null) {
                 //call the user that was clicked
-                call = sinchClient.getCallClient().callUser(users.get(i).toString());
+                currentCall = sinchClient.getCallClient().callUser(users.get(i).toString());
                 //add a listener to the call
-                call.addCallListener(new SinchCallListener());
+                currentCall.addCallListener(new SinchCallListener());
                 //change hangup button text
                 hangupButton.setText("Hang Up Call with " + users.get(i));
             } else {
