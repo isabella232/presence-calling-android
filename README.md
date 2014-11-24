@@ -10,7 +10,7 @@ Please keep in mind that this is not a production ready app! In order to keep th
 
 ##Project Setup and User Login
 
-First, create a new project (this tutorial is build and tested in Android Studio, but Eclipse will work fine too) and name the first activity **LoginActivity**. The interface for this activity should be an EditText and a login button. You won't actually be authenticating a user, but you will need to associate the current user with the username they enter. Here is the code for the login screen:
+First, create a new project (this tutorial is built for and tested in Android Studio) and name the first activity **LoginActivity**. The interface for this activity should be an EditText and a login button. You won't actually be authenticating a user, but you will need to associate the current user with the username they enter. Here is the code for the login screen:
 
     <EditText
         android:layout_width="match_parent"
@@ -29,6 +29,7 @@ First, create a new project (this tutorial is build and tested in Android Studio
         
 When the login button is clicked, you will start the next activity and pass along the entered username as a string extra. You will also need to create the next activity, **MainActivity**:
 
+    //in OnCreate
     findViewById(R.id.loginButton).setOnClickListener(new View.OnClickListener() {
         @Override
         public void onClick(View view) {
@@ -98,100 +99,100 @@ Now, I'll show you the code to populate a list of active users, subscribe to cal
     //in onResume
     super.onResume();
 
-        //setup to add & remove users from the ListView
-        users = new ArrayList<String>();
-        final ListView usersListView = (ListView)findViewById(R.id.usersListView);
-        final ArrayAdapter usersArrayAdapter = new ArrayAdapter<String>(getApplicationContext(), R.layout.user_list_item, users);
-        usersListView.setAdapter(usersArrayAdapter);
+    //setup to add & remove users from the ListView
+    users = new ArrayList<String>();
+    final ListView usersListView = (ListView)findViewById(R.id.usersListView);
+    final ArrayAdapter usersArrayAdapter = new ArrayAdapter<String>(getApplicationContext(), R.layout.user_list_item, users);
+    usersListView.setAdapter(usersArrayAdapter);
 
-        //first, figure out who is here now
-        pubnub.hereNow("calling_channel", new Callback() {
-            public void successCallback(String channel, Object response) {
+    //first, figure out who is here now
+    pubnub.hereNow("calling_channel", new Callback() {
+        public void successCallback(String channel, Object response) {
+            try {
+                JSONObject hereNowResponse = new JSONObject(response.toString());
+                hereNowUuids = new JSONArray(hereNowResponse.get("uuids").toString());
+            } catch (JSONException e) {
+                Log.d("JSONException",e.toString());
+            }
+
+            //add everyone but yourself to the ListView
+            String currentUuid;
+            for (int i=0;i<hereNowUuids.length();i++){
                 try {
-                    JSONObject hereNowResponse = new JSONObject(response.toString());
-                    hereNowUuids = new JSONArray(hereNowResponse.get("uuids").toString());
+                    currentUuid = hereNowUuids.get(i).toString();
+                    if (!currentUuid.equals(pubnub.getUUID())) {
+                        users.add(currentUuid);
+                        MainActivity.this.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                usersArrayAdapter.notifyDataSetChanged();
+                            }
+                        });
+                    }
                 } catch (JSONException e) {
                     Log.d("JSONException",e.toString());
                 }
+            }
+        }
 
-                //add everyone but yourself to the ListView
-                String currentUuid;
-                for (int i=0;i<hereNowUuids.length();i++){
-                    try {
-                        currentUuid = hereNowUuids.get(i).toString();
-                        if (!currentUuid.equals(pubnub.getUUID())) {
-                            users.add(currentUuid);
+        public void errorCallback(String channel, PubnubError error) {
+            Log.d("PubnubError", error.toString());
+        }
+    });
+
+    //subscribe to calling_channel
+    //empty callback for the sake of simplicity in this tutorial
+    try {
+        pubnub.subscribe("calling_channel", new Callback() {
+        });
+    } catch (PubnubException e) {
+        Log.d("PubnubException",e.toString());
+    }
+
+    //start listening for users to join & leave the channel
+    try {
+        pubnub.presence("calling_channel", new Callback() {
+
+            @Override
+            public void successCallback(String channel, Object message) {
+                try {
+                    JSONObject jsonMessage = new JSONObject(message.toString());
+                    String action = jsonMessage.get("action").toString();
+                    String uuid = jsonMessage.get("uuid").toString();
+
+                    if (!uuid.equals(pubnub.getUUID())) {
+                        //if a user subscribes to  calling_channel, add them to the list
+                        if (action.equals("join")) {
+                            users.add(uuid);
                             MainActivity.this.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     usersArrayAdapter.notifyDataSetChanged();
                                 }
                             });
-                        }
-                    } catch (JSONException e) {
-                        Log.d("JSONException",e.toString());
-                    }
-                }
-            }
-
-            public void errorCallback(String channel, PubnubError error) {
-                Log.d("PubnubError", error.toString());
-            }
-        });
-
-        //subscribe to calling_channel
-        //empty callback for the sake of simplicity in this tutorial
-        try {
-            pubnub.subscribe("calling_channel", new Callback() {
-            });
-        } catch (PubnubException e) {
-            Log.d("PubnubException",e.toString());
-        }
-
-        //start listening for users to join & leave the channel
-        try {
-            pubnub.presence("calling_channel", new Callback() {
-
-                @Override
-                public void successCallback(String channel, Object message) {
-                    try {
-                        JSONObject jsonMessage = new JSONObject(message.toString());
-                        String action = jsonMessage.get("action").toString();
-                        String uuid = jsonMessage.get("uuid").toString();
-                                            
-                        if (!uuid.equals(pubnub.getUUID())) {
-                            //if a user subscribes to  calling_channel, add them to the list
-                            if (action.equals("join")) {
-                                users.add(uuid);
-                                MainActivity.this.runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        usersArrayAdapter.notifyDataSetChanged();
-                                    }
-                                });
-                            //if a user unsubscribes from calling_channel, remove them from the list
-                            } else if (action.equals("leave")) {
-                                for (int i = 0; i < users.size(); i++) {
-                                    if (users.get(i).equals(uuid)) {
-                                        users.remove(i);
-                                        MainActivity.this.runOnUiThread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                usersArrayAdapter.notifyDataSetChanged();
-                                            }
-                                        });
-                                    }
+                        //if a user unsubscribes from calling_channel, remove them from the list
+                        } else if (action.equals("leave")) {
+                            for (int i = 0; i < users.size(); i++) {
+                                if (users.get(i).equals(uuid)) {
+                                    users.remove(i);
+                                    MainActivity.this.runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            usersArrayAdapter.notifyDataSetChanged();
+                                        }
+                                    });
                                 }
                             }
                         }
-                    } catch (JSONException e) {
-                        Log.d("JSONException", e.toString());
                     }
+                } catch (JSONException e) {
+                    Log.d("JSONException", e.toString());
                 }
-            });
-        } catch (PubnubException e) {
-            Log.d("PubnubException",e.toString());
-        }
+            }
+        });
+    } catch (PubnubException e) {
+        Log.d("PubnubException",e.toString());
+    }
 
 In addition, you will want to unsubscribe users from the channel when they kill the app or put it in the background:
 
@@ -260,7 +261,7 @@ Next, Sinch requires access to the microphone, as well as a few other permission
 
 (Sinch also requires internet access, but you added that earlier when setting up Pubnub.)
 
-In onCreate, start an instance of the Sinch client using your app key and secret from the Sinch dashboard. ThIn addition, define the hangup and pickup buttons:
+In **MainActivity** onCreate, start an instance of the Sinch client using your app key and secret from the Sinch dashboard. ThIn addition, define the hangup and pickup buttons:
 
     //declare globally within MainActivity
     private SinchClient sinchClient;
@@ -340,7 +341,7 @@ Now, go back to where you start the Sinch client, and right after you start it, 
 
     sinchClient.getCallClient().addCallClientListener(new SinchCallClientListener());
     
-Next, make the pickup and hangup buttons functional:
+Next, make the pickup and hangup buttons functional in **MainActivity** onResume:
 
     //if there is an incoming call, answer it and stop listening for more incoming calls
     pickupButton.setOnClickListener(new View.OnClickListener() {
@@ -364,6 +365,7 @@ Next, make the pickup and hangup buttons functional:
     
 Now that you're prepared to accept incoming calls, you should let your users actually make calls!
 
+    //in onResume
     usersListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int i, long id) {
