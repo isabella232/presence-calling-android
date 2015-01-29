@@ -217,7 +217,7 @@ Now, try running the app on two different devices and log in as two different us
 2. Create a new app like so in the Sinch developer dashboard.
 <img src="images/new-sinch-app.png" style="width:100%;" />
 3. Take note of your app key and secret. You will need these in the next section.
-4. Download the Sinch Android SDK from [sinch.com/downloads](https://www.sinch.com/downloads).
+4. Download the Sinch Android SDK from [sinch.com/downloads](https://www.sinch.com/downloads/).
 5. Follow these steps for adding Sinch to your project:
 
 **Android Studio**   
