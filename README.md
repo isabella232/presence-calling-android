@@ -1,16 +1,16 @@
-#Calling with User Presence
+#Calling With User Presence
 
-In this tutorial, you will build a calling app that displays a real-time list of online users, and only allows calls to and from those online users. You will use Sinch app-to-app calling to make the calls, and Pubnub presence detection to create a real-time list of online users. Your finished product will look similar to this:
+In this tutorial, you will build a calling app that displays a real-time list of online users, and only allows calls to and from those online users. You will use Sinch app-to-app calling to make the calls, and PubNub presence detection to create a real-time list of online users. Your finished product will look similar to this:
 
 <img src="images/app-flow.png" style="width:100%;"/>
 
 You can find the finished code for this tutorial at [github.com/sinch/presence-calling-android](http://www.github.com/sinch/presence-calling-android).
 
-Please keep in mind that this is not a production ready app! In order to keep this tutorial fairly concise, there will surely be some user experience flaws pertaining to edge cases.
+Please keep in mind that this is not a production-ready app. To keep this tutorial fairly concise, there will surely be some user experience flaws pertaining to edge cases.
 
-##Project Setup and User Login
+##Project setup and user login
 
-First, create a new project (this tutorial is built for and tested in Android Studio) and name the first activity **LoginActivity**. The interface for this activity should be an EditText and a login button. You won't actually be authenticating a user, but you will need to associate the current user with the username they enter. Here is the code for the login screen:
+First, create a new project (this tutorial is built for and tested in Android Studio) and name the first activity **LoginActivity**. The interface for this activity should be an EditText and a login button. You won't actually be authenticating a user, but you will need to associate the current user with the username he or she enters. Here is the code for the login screen:
 
     <EditText
         android:layout_width="match_parent"
@@ -27,7 +27,7 @@ First, create a new project (this tutorial is built for and tested in Android St
         android:layout_below="@+id/usernameEditText"
         android:layout_centerHorizontal="true"/>
         
-When the login button is clicked, you will start the next activity and pass along the entered username as a string extra. You will also need to create the next activity, **MainActivity**:
+When you click the login button, you will start the next activity and pass along the entered username as a string extra. You will also need to create the next activity, **MainActivity**:
 
     //in OnCreate
     findViewById(R.id.loginButton).setOnClickListener(new View.OnClickListener() {
@@ -45,17 +45,17 @@ When the login button is clicked, you will start the next activity and pass alon
         }
     });
 
-##Set up Pubnub
+##Set up PubNub
 
-1. Sign up for an account at [pubnub.com/get-started](http://www.pubnub.com/get-started/).
-2. Once you're logged in to the admin console, add the presence feature.
+1. Sign up for an account at [pubnub.com/get-started](http://www.pubnub.com/get-started/)
+2. Once you're logged in to the admin console, add the presence feature
 <img src="images/add-presence.png" style="width:100%;" />
-3. Take note of your publish and subscribe keys. You will need these in the next section.
-4. Download the Android SDK by clicking this link [github.com/pubnub/java/archive/master.zip](https://github.com/pubnub/java/archive/master.zip)
+3. Take note of your publish and subscribe keys as you will need these in the next section
+4. [Download the Android SDK here](https://github.com/pubnub/java/archive/master.zip)
 5. Add **Pubnub-Android-3.5.6.jar** and **bcprov-jdk15on-1.47.jar** to your libs folder and right-click "add as library"
 6. Add `<uses-permission android:name="android.permission.INTERNET"/>` to **AndroidManifest.xml**
 
-##List of Online Users
+##List of online users
 
 Start by creating the two layouts to display a list of users. In **activity_main.xml**, make a ListView: 
 
@@ -71,7 +71,7 @@ Start by creating the two layouts to display a list of users. In **activity_main
 
     </RelativeLayout>
     
-Each item in the list will use the layout in **user_list_item.xml**. This will be very simple - just the text of the username:
+Each item in the list will use the layout in **user_list_item.xml**. This will be very simple, just the text of the username:
 
     <TextView xmlns:android="http://schemas.android.com/apk/res/android"
           android:id="@+id/userListItem"
@@ -80,7 +80,7 @@ Each item in the list will use the layout in **user_list_item.xml**. This will b
           android:layout_height="fill_parent"
           android:textSize="20sp" />
           
-Using Pubnub, each user can subscribe to the channel **calling_channel**, and listen for presence events on that channel (users joining and leaving). In this app, you will want users to subscribe to the channel when they are active in the app, and leave the channel when they put the app in the background or kill the app. In MainActivity onCreate, get the current username from the intent and create a new Pubnub object:
+Using PubNub, each user can subscribe to the channel **calling_channel** and listen for presence events on that channel, like users joining and leaving. In this app, you will want users to subscribe to the channel when they are active in the app, and leave the channel when they put the app in the background or kill the app. In MainActivity onCreate, get the current username from the intent and create a new PubNub object:
 
     //declare globally within the MainActivity
     private Pubnub pubnub;
@@ -209,27 +209,27 @@ And lastly, override the method **onBackPressed** so that it doesn't return user
     public void onBackPressed() {
     }
     
-Now, try running the app on two different devices and log in as two different users. When you log in on the second device, each user should see the other in the list of online users!
+Now, try running the app on two different devices and log in as two different users. When you log in on the second device, each user should see the other in the list of online users.
 
 ##Set up Sinch
 
-1. Sign up for a Sinch developer account at [sinch.com/dashboard/#/signup](https://www.sinch.com/dashboard/#/signup).
-2. Create a new app like so in the Sinch developer dashboard.
+1. [Sign up for a Sinch developer account](https://www.sinch.com/dashboard/#/signup)
+2. Create a new app like so in the Sinch developer dashboard
 <img src="images/new-sinch-app.png" style="width:100%;" />
-3. Take note of your app key and secret. You will need these in the next section.
-4. Download the Sinch Android SDK from [sinch.com/downloads](https://www.sinch.com/downloads/).
+3. Take note of your app key and secret as you will need these in the next section
+4. Download the Sinch Android SDK from [sinch.com/downloads](https://www.sinch.com/downloads/)
 5. Follow these steps for adding Sinch to your project:
 
 **Android Studio**   
 - Copy the two jar files into your project's libs folder    
-- Right click the jar files and select "Add as library"    
-- Create a new folder under src/main, and name it jniLibs    
+- Right-click the jar files and select "Add as library"    
+- Create a new folder under src/main and name it jniLibs    
 - Move the armeabi and armeabi-v7a folders into the jniLibs folder you just created    
 
 **Eclipse**    
-- Copy the entire libs folder into your project's root directory.
+- Copy the entire libs folder into your project's root directory
 
-##Make and Receive Calls
+##Make and receive calls
 
 Users will stay in the main activity while making calls. First, add a **Hang up** and **Pick up** button to **activity_main.xml**:
 
@@ -259,9 +259,9 @@ Next, Sinch requires access to the microphone, as well as a few other permission
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
-(Sinch also requires internet access, but you added that earlier when setting up Pubnub.)
+(Sinch also requires internet access, but you added that earlier when setting up PubNub.)
 
-In **MainActivity** onCreate, start an instance of the Sinch client using your app key and secret from the Sinch dashboard. ThIn addition, define the hangup and pickup buttons:
+In **MainActivity** onCreate, start an instance of the Sinch client using your app key and secret from the Sinch dashboard. In addition, define the hangup and pickup buttons:
 
     //declare globally within MainActivity
     private SinchClient sinchClient;
@@ -287,7 +287,7 @@ In **MainActivity** onCreate, start an instance of the Sinch client using your a
     pickupButton = (Button) findViewById(R.id.pickupButton);
     hangupButton = (Button) findViewById(R.id.hangupButton);
     
-Next, you need to define listeners for the Sinch call client, as well as for individual calls. Do this inside of the MainActivity class:
+Next, define listeners for the Sinch call client, as well as for individual calls. Do this inside of the MainActivity class:
 
     //you'll attach an instance of this listener to individual calls
     private class SinchCallListener implements CallListener {
@@ -337,7 +337,7 @@ Next, you need to define listeners for the Sinch call client, as well as for ind
         }
     }
     
-Now, go back to where you start the Sinch client, and right after you start it, add an instance of SinchCallClientListener. Now, your users will be notified when they have an incoming call:
+Go back to where you start the Sinch client, and right after you start it, add an instance of SinchCallClientListener. Now your users will be notified when they have an incoming call:
 
     sinchClient.getCallClient().addCallClientListener(new SinchCallClientListener());
     
@@ -363,7 +363,7 @@ Next, make the pickup and hangup buttons functional in **MainActivity** onResume
         }
     });
     
-Now that you're prepared to accept incoming calls, you should let your users actually make calls!
+Now that you're prepared to accept incoming calls, you should let your users actually make calls.
 
     //in onResume
     usersListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -385,16 +385,8 @@ Now that you're prepared to accept incoming calls, you should let your users act
         }
     });
 
-And there you have it! You can now launch the app on 2 different devices or emulators, login as two different users, and call each other. Try playing around with killing one app and restarting it as another user - it's cool to see the "online" list update in real time on the other device. 
+And there you have it! Try launching the app on two different devices or emulators, log in as two different users, and call each other. Try playing around with killing one app and restarting it as another user; it's cool to see the "online" list update in real time on the other device. 
 
-If you want to compare your code to our finished app, don't forget to check the [Github repo](http://www.github.com/sinch/presence-calling-android). You can also reach us at [dev@sinch.com](mailto:dev@sinch.com) with questions!
-
-
-
-
-
-
-
-
+If you want to compare your code to our finished app, check the [GitHub repo](http://www.github.com/sinch/presence-calling-android). You can also reach us at [dev@sinch.com](mailto:dev@sinch.com) with questions.
 
 
