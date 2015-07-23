@@ -1,8 +1,8 @@
-#Calling With User Presence
+#Build A User Presence System For Your Calling App
 
 In this tutorial, you will build a calling app that displays a real-time list of online users, and only allows calls to and from those online users. You will use Sinch app-to-app calling to make the calls, and PubNub presence detection to create a real-time list of online users. Your finished product will look similar to this:
 
-<img src="images/app-flow.png" style="width:100%;"/>
+![user presence system](images/app-flow.png)
 
 You can find the finished code for this tutorial at [github.com/sinch/presence-calling-android](http://www.github.com/sinch/presence-calling-android).
 
